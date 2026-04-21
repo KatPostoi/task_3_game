@@ -166,6 +166,7 @@ export class UiScene extends Phaser.Scene {
 
     const labelText = `${action.label} · ${action.hotkeyLabel}`;
     const iconKey = this.getButtonIconKey(action.id, layout.useActionIcons);
+    const flowState = this.flowController.getState();
 
     if (
       button.currentActionId === action.id &&
@@ -197,9 +198,9 @@ export class UiScene extends Phaser.Scene {
         layout.iconMaxWidth,
         layout.iconMaxHeight,
       );
-      button.icon.setRotation(layout.iconRotation);
+      button.icon.setRotation(this.getButtonIconRotation(action.id, layout));
       button.icon.setVisible(true);
-      button.icon.clearTint();
+      this.applyButtonIconAppearance(button.icon, action.id, flowState);
       button.icon.setInteractive({ useHandCursor: true });
     } else {
       button.background.setVisible(true);
@@ -216,7 +217,12 @@ export class UiScene extends Phaser.Scene {
     });
     hitTarget.on("pointerover", () => {
       if (iconKey) {
-        button.icon.setTint(this.toColorNumber(SCENE_ACCENT_COLOR));
+        this.applyButtonIconAppearance(
+          button.icon,
+          action.id,
+          flowState,
+          SCENE_ACCENT_COLOR,
+        );
         return;
       }
 
@@ -224,7 +230,7 @@ export class UiScene extends Phaser.Scene {
     });
     hitTarget.on("pointerout", () => {
       if (iconKey) {
-        button.icon.clearTint();
+        this.applyButtonIconAppearance(button.icon, action.id, flowState);
         return;
       }
 
@@ -434,6 +440,47 @@ export class UiScene extends Phaser.Scene {
     }
 
     return null;
+  }
+
+  private getButtonIconRotation(
+    actionId: HudActionId,
+    layout: OverlayLayout,
+  ): number {
+    if (
+      this.flowController.getState() === GAME_FLOW_STATES.paused &&
+      actionId === HUD_ACTION_IDS.resume
+    ) {
+      return Phaser.Math.DegToRad(90);
+    }
+
+    return layout.iconRotation;
+  }
+
+  private applyButtonIconAppearance(
+    icon: Phaser.GameObjects.Image,
+    actionId: HudActionId,
+    flowState: GameFlowState,
+    tintColor: string | null = null,
+  ): void {
+    const useFillTint =
+      flowState === GAME_FLOW_STATES.paused &&
+      actionId === HUD_ACTION_IDS.restart;
+
+    icon.setTintMode(
+      useFillTint ? Phaser.TintModes.FILL : Phaser.TintModes.MULTIPLY,
+    );
+
+    if (tintColor) {
+      icon.setTint(this.toColorNumber(tintColor));
+      return;
+    }
+
+    if (useFillTint) {
+      icon.setTint(0xffffff);
+      return;
+    }
+
+    icon.clearTint();
   }
 
   private handleUpdate(): void {
