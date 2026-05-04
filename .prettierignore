@@ -1,0 +1,5 @@
+coverage/
+dist/
+node_modules/
+Platformer-Game-CatNap-/
+specs/
